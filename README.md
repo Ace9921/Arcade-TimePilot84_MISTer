@@ -42,5 +42,5 @@ Quick reference for folders and file placement:
 
 ## Known Issues
 1) Set 3 is not supported yet (this version uses a different memory map for the primary CPU)
-2) Watchdog is not implemented
-3) Resolution is incorrectly reported as 253x224
+2) Resolution is incorrectly reported as 253x224
+

@@ -140,7 +140,7 @@ ls174 u2B
 (
 	.d({1'b0, mD_out[3], mD_out[4], mD_out[2:0]}),
 	.clk(n_col0),
-	.mr(reset),
+	.mr(n_res),
 	.q({1'bZ, vcol0, vcol1, color_A[6:4]})
 );
 
@@ -215,14 +215,14 @@ eprom_7 u2J
 );
 
 //Address decoding for primary MC6809E (2/2)
-wire n_in6, n_in5, n_ioen, n_sound, n_irq_en, n_col0;
+wire n_in6, n_in5, n_ioen, n_sound, n_irq_en, n_col0, n_mafr;
 ls138 u3A
 (
 	.n_e1(n_io_dec),
 	.n_e2(n_io_dec),
 	.e3(meq),
 	.a({m_rw, mA[12:11]}),
-	.o({n_in6, n_in5, n_ioen, 1'bZ, n_sound, n_irq_en, n_col0, 1'bZ})
+	.o({n_in6, n_in5, n_ioen, 1'bZ, n_sound, n_irq_en, n_col0, n_mafr})
 );
 
 //Generate primary MC6809E VBlank IRQ clear and H/V flip signals
@@ -230,7 +230,7 @@ wire vrev, hrev, vblk_irq_clr;
 ls259 u3B
 (
 	.d(mD_out[0]),
-	.n_clr(reset),
+	.n_clr(n_res),
 	.n_g(n_irq_en),
 	.s(mA[2:0]),
 	.q({2'bZZ, vrev, hrev, 3'bZZZ, vblk_irq_clr})
@@ -795,9 +795,8 @@ ls10 u8F
 );
 
 //NAND shared RAM output enable with inverted latched H1 bit of horizontal counter, generate read
-//enable for shared RAM and active-low LD signal
-//Gate 3 part of watchdog cirucit - omit for now
-wire sharedram_h1, n_sharedram_rd, n_ld;
+//enable for shared RAM and active-low LD signal, enable for watchdog timer reset
+wire sharedram_h1, n_sharedram_rd, n_ld, watchdog_timer_rst;
 ls00 u8G
 (
 	.a1(n_h1d),
@@ -806,9 +805,9 @@ ls00 u8G
 	.a2(sharedram_h1),
 	.b2(n_sharedram_oe),
 	.y2(n_sharedram_rd),
-	.a3(1'b1),
-	.b3(1'b1),
-	//.y3(),
+	.a3(1),
+	.b3(watchdog_timer_trig),
+	.y3(watchdog_timer_rst),
 	.a4(h1),
 	.b4(h2),
 	.y4(n_ld)
@@ -1043,7 +1042,7 @@ cpu09 u12E
 (
 	.clk(se),
 	.ce(1'b1),
-	.rst(~reset),
+	.rst(~n_res),
 	.rw(s_rw),
 	.addr(sA),
 	.data_in(sD_in),
@@ -1073,7 +1072,7 @@ cpu09 u12G
 (
 	.clk(me),
 	.ce(1'b1),
-	.rst(~reset),
+	.rst(~n_res),
 	.rw(m_rw),
 	.addr(mA),
 	.data_in(mD_in),
@@ -1144,14 +1143,14 @@ spram #(4, 10) u13D
 );
 
 //Address decoding for secondary MC6809E
-wire n_rom5_en, n_scr, n_ora, n_scpu_irq, n_beam_en;
+wire n_rom5_en, n_scr, n_ora, n_scpu_irq, n_beam_en, n_safr;
 ls138 u13E
 (
 	.n_e1(1'b0),
 	.n_e2(1'b0),
 	.e3(seq),
 	.a(sA[15:13]),
-	.o({n_rom5_en, 2'bZZ, n_scr, n_ora, n_scpu_irq, n_beam_en, 1'bZ})
+	.o({n_rom5_en, 2'bZZ, n_scr, n_ora, n_scpu_irq, n_beam_en, n_safr})
 );
 
 //Invert E and Q clocks for secondary MC6809E, MCR and SCR
@@ -1172,9 +1171,8 @@ ls04 u13F
 	.y6(mcr)
 );
 
-//NAND horizontal counter bits [6:4]
-//Gate 3 part of watchdog circuit - omit for now
-wire n_h32_128, sndbrd_dir;
+//NAND horizontal counter bits [6:4], watchdog timer + power-on reset
+wire res, n_h32_128, sndbrd_dir;
 ls10 u13G
 (
 	.a1(h32),
@@ -1185,29 +1183,29 @@ ls10 u13G
 	.b2(n_ioen),
 	.c2(n_in5),
 	.y2(sndbrd_dir),
-	.a3(1'b1),
-	.b3(1'b1),
-	.c3(1'b1)
-	//.y3()
+	.a3(n_watchdog_timer),
+	.b3(n_por_timer_out),
+	.c3(reset),
+	.y3(res)
 );
 
-//Invert E and Q clocks for primary MC6809E
-//Inverters 1, 5 and 6 part of watchdog circuit - omit for now
-wire me, mq, sprite_lbuff_h;
+//Invert reset line for the entire PCB, E and Q clocks for primary MC6809E, power-on reset timer output,
+//watchdog timer output
+wire n_res, me, mq, sprite_lbuff_h, n_por_timer_out, n_watchdog_timer;
 ls04 u13H
 (
-	.a1(1'b1),
-	//.y1(),
+	.a1(res),
+	.y1(n_res),
 	.a2(n_me),
 	.y2(me),
 	.a3(n_mq),
 	.y3(mq),
 	.a4(sprite_lbuff_l),
 	.y4(sprite_lbuff_h),
-	.a5(1'b1),
-	//.y5(),
-	.a6(1'b1)
-	//.y6()
+	.a5(por_timer_out),
+	.y5(n_por_timer_out),
+	.a6(watchdog_timer),
+	.y6(n_watchdog_timer)
 );
 
 //Generate the following signals
@@ -1293,7 +1291,7 @@ ls74 u14F
 	.d1(1'b0),
 	.q1(n_sirq),
 	.n_pre2(1'b1),
-	.n_clr2(reset),
+	.n_clr2(n_res),
 	.clk2(n_scpu_irq),
 	.d2(sD_out[0]),
 	.q2(s_vblk_irq_clr)
@@ -1317,9 +1315,19 @@ ls74 u14G
 	.n_q2(n_se)
 );
 
-//Latch least significant bit of horizontal counter
-//Second half part of the watchdog circuit, omit for now
-wire h1d, n_h1d;
+//Watchdog timer
+wire watchdog_timer_fb, watchdog_timer;
+ls293 u14H
+(
+	.clk1(vblk),
+	.clk2(watchdog_timer_fb),
+	.clr1(watchdog_timer_rst),
+	.clr2(watchdog_timer_rst),
+	.q({watchdog_timer, 2'bZZ, watchdog_timer_fb})
+);
+
+//Latch least significant bit of horizontal counter, latch for watchdog timer
+wire h1d, n_h1d, watchdog_lat;
 ls74 u14J
 (
 	.n_pre1(1'b1),
@@ -1328,12 +1336,11 @@ ls74 u14J
 	.d1(h1),
 	.q1(h1d),
 	.n_q1(n_h1d),
-	.n_pre2(1'b1),
-	.n_clr2(1'b1),
-	.clk2(1'b0),
-	.d2(1'b0)
-	//.q2()
-	//n_q2 unused
+	.n_pre2(watchdog_lat_pre),
+	.n_clr2(n_res),
+	.clk2(n_safr),
+	.d2(watchdog_safr),
+	.q2(watchdog_lat)
 );
 
 //Sprite ROM 4/4
@@ -1420,22 +1427,31 @@ ls32 u15G
 	.y4(char_sel0)
 );
 
-//Generate sprite RAM address line A9
-//Gates 1, 2 and 4 are all part of the watchdog circuit, omit for now
+//15H contains an NE555 timer which takes approximately 326ms to pull the board out of reset.  Model this as a
+//32-bit counter that pulls the core out of reset when its value reaches 1998221
+reg [31:0] por_timer;
+always_ff @(posedge pixel_clk) begin
+	if(por_timer < 1998221)
+		por_timer <= por_timer + 1;
+end
+wire por_timer_out = (por_timer < 1998220);
+
+//Generate watchdog latch preset, watchdog timer trigger, sprite RAM address line A9, watchdog latch SAFR input
+wire watchdog_lat_pre, watchdog_timer_trig, watchdog_safr;
 ls32 u15J
 (
-	.a1(1'b0),
-	.b1(1'b0),
-	//.y1(),
-	.a2(1'b0),
-	.b2(1'b0),
-	//.y2(),
+	.a1(n_sq),
+	.b1(n_mafr),
+	.y1(watchdog_lat_pre),
+	.a2(n_mafr),
+	.b2(watchdog_lat),
+	.y2(watchdog_timer_trig),
 	.a3(sA[10]),
 	.b3(h2),
 	.y3(spriteram_A[9]),
 	.a4(1'b0),
-	.b4(1'b0)
-	//.y4()
+	.b4(n_safr),
+	.y4(watchdog_safr)
 );
 
 //Multiplex sprite ROM data outputs

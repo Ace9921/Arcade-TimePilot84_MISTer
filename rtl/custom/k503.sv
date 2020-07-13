@@ -89,8 +89,9 @@ wire [7:0] obj_sum = OB + VCNT;
 wire obj_ctl = ~(&obj_sum[7:4]);
 
 //Sprite control
+wire sprite_ctrl = ~(~LD & ~H4 & ~H8);
 reg ob6_lat, ob7_lat;
-always_ff @(posedge H4) begin
+always_ff @(posedge sprite_ctrl) begin
 	ob6_lat <= OB[6];
 	ob7_lat <= OB[7];
 end

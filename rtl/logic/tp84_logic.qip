@@ -17,6 +17,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls253.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls259.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls273.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls283.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls293.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls368.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls374.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls377.sv
